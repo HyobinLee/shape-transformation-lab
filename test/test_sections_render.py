@@ -1,4 +1,4 @@
-"""네 섹션이 이상한 입력을 받아도 예외 없이 그려지는지 확인한다.
+"""모든 섹션이 이상한 입력을 받아도 예외 없이 그려지는지 확인한다.
 
 교육용 도구의 사용자는 반드시 이상한 값을 넣는다. 그래서 이 검증이 보는 것은
 계산의 정확성이 아니라 **앱이 죽지 않는가** 하나다. 학생 화면에 빨간
@@ -28,6 +28,7 @@ MENUS = [
     "3. 복소평면에서의 이동",
     "4. 복소평면에서의 회전/평행이동",
     "5. 일차변환의 고유공간",
+    "7. 되풀이하면 어디로 가는가",
 ]
 
 failures = []
@@ -57,7 +58,7 @@ def describe(at):
     return " | ".join(e.value for e in at.exception) if at.exception else ""
 
 
-print("=== 1. 네 섹션이 기본값으로 뜨는가 ===")
+print("=== 1. 모든 섹션이 기본값으로 뜨는가 ===")
 for menu in MENUS:
     at = load(menu)
     check(menu, not at.exception, describe(at))
@@ -194,6 +195,37 @@ spec = json.loads(at.get("plotly_chart")[0].proto.spec)
 check("연속 변환 프레임", len(spec.get("frames", [])) == 41, len(spec.get("frames", [])))
 check("넓이 계기판 3칸", len(at.get("metric")) == 3, len(at.get("metric")))
 check("연속 변환 켜고도 예외 없음", not at.exception, describe(at))
+
+print("\n=== 12. 섹션 7 — 다섯 프리셋과 발산 방어 ===")
+from section7_orbit import PRESETS as ORBIT_PRESETS  # noqa: E402
+
+for name, values in ORBIT_PRESETS.items():
+    at = AppTest.from_file(APP, default_timeout=90)
+    at.run()
+    at.sidebar.radio[0].set_value(MENUS[5])
+    at.run()
+    at.session_state["s7_reveal"] = True
+    for key, value in values.items():
+        at.session_state[f"s7_{key}"] = float(value)
+    at.run()
+    check(f"섹션 7 — {name}", not at.exception, describe(at))
+
+at = load(MENUS[5], s7_r=2.5, s7_n=200)      # 확실히 발산시킨다
+check("섹션 7 발산해도 죽지 않는다", not at.exception, describe(at))
+check("발산을 학생에게 알린다", len(at.warning) > 0)
+
+at = load(MENUS[5], s7_julia=True)
+check("줄리아 집합을 켜도 죽지 않는다", not at.exception, describe(at))
+
+print("\n=== 13. 섹션 4 — 고정점 추측·확인 경로 ===")
+at = load(MENUS[3], s4_guess=True, s4_reveal=True)
+check("추측+정답 토글 동시", not at.exception, describe(at))
+
+at = load(MENUS[3], s4_reveal=True, theta_deg=0.0)
+check("theta=0 → 중심이 없다고 안내", not at.exception and len(at.info) > 0, describe(at))
+
+at = load(MENUS[3], **{"trail_on__s4": True, "s4_steps": True})
+check("중간 단계 + 자취 동시", not at.exception, describe(at))
 
 print("\n" + "=" * 52)
 if failures:
