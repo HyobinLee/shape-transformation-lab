@@ -2,6 +2,7 @@ import streamlit as st
 import numpy as np
 import plotly.graph_objs as go
 
+import lab_ui
 from lab_ui import chart, equal_axes
 
 #: 좌표평면에서 보여 줄 범위. 학생 입력도 이 범위로 제한한다.
@@ -74,6 +75,14 @@ def run_symmetry_rotation():
         st.markdown("🔵 입력점 | 🟢 1차 대칭 | 🔴 최종 대칭 결과")
         st.markdown("🟣 축1 (보라색 선), 🟠 축2 (주황색 선)")
 
+        # ✅ 관찰 보조 (렌즈)
+        #
+        # 점 하나만 보면 "회전"이라는 말이 은유로만 들린다. 점을 옮겨 가며
+        # 자취를 남기면 입력 자취와 최종 자취가 나란히 놓이고, 그것이 문자
+        # 그대로 회전임이 보인다.
+        st.divider()
+        trail_on = lab_ui.trail_controls("s2")
+
     with col2:
         # 행렬
         R1 = reflection_matrix(axis1, angle1 if angle1 is not None else 1.0)
@@ -84,9 +93,24 @@ def run_symmetry_rotation():
         P1 = R1 @ P0
         P2 = R2 @ P1
 
+        # 자취 적재. 값이 실제로 바뀌었을 때만 쌓인다(trail_push 가 처리).
+        if trail_on:
+            lab_ui.trail_push("s2", ((P0[0], P0[1]), (P2[0], P2[1])), limit=150)
+
         # 그래프 생성
         fig = go.Figure()
         fig.update_layout(title="좌표 평면")
+
+        # 지난 자취를 먼저 깔아 현재 점이 위에 오게 한다.
+        if trail_on:
+            history = lab_ui.trail_items("s2")
+            if history:
+                for trace in lab_ui.trail_traces([[p0] for p0, _ in history],
+                                                 lab_ui.BEFORE, "입력점 자취"):
+                    fig.add_trace(trace)
+                for trace in lab_ui.trail_traces([[p2] for _, p2 in history],
+                                                 lab_ui.AFTER, "최종점 자취"):
+                    fig.add_trace(trace)
 
         # 🎯 대칭축 시각화 함수
         def draw_axis(fig, axis, angle, name, color):

@@ -114,6 +114,54 @@ for menu in MENUS:
     check(f"{menu} — 차트 {len(charts)}개 모두 key 보유",
           len(charts) > 0 and all(c.proto.id for c in charts))
 
+print("\n=== 8. 관찰 보조 장치를 켜도 죽지 않는가 ===")
+# 무지개는 도형 종류마다 다른 경로를 탄다 — 닫힌 곡선/열린 곡선/점구름.
+for shape in ["삼각형", "사각형", "원", "직선"]:
+    at = AppTest.from_file(APP, default_timeout=60)
+    at.run()
+    at.sidebar.radio[0].set_value(MENUS[0])
+    at.run()
+    at.selectbox[0].set_value(shape)
+    at.run()
+    at.session_state["s1_rainbow"] = True
+    at.run()
+    at.session_state["s1_numbers"] = True
+    at.run()
+    check(f"섹션 1 무지개+번호 — {shape}", not at.exception, describe(at))
+
+at = load(MENUS[0])
+at.session_state["s1_rainbow"] = True
+at.run()
+# 도형이 한 점으로 붕괴해도(모든 성분 0) 0으로 나누지 않아야 한다.
+for k in range(4):
+    at.number_input[k if len(at.number_input) > k else 0].set_value(0.0)
+at.run()
+check("섹션 1 무지개 + det=0 행렬", not at.exception, describe(at))
+
+at = load(MENUS[2])
+at.session_state["s3_rainbow"] = False
+at.run()
+check("섹션 3 무지개 끄기", not at.exception, describe(at))
+
+print("\n=== 9. 자취가 쌓이고 상한을 지키는가 ===")
+at = AppTest.from_file(APP, default_timeout=60)
+at.run()
+at.sidebar.radio[0].set_value(MENUS[1])
+at.run()
+at.session_state["trail_on__s2"] = True
+at.run()
+for x in [1.0, 2.0, 3.0, 3.0, 3.0]:      # 같은 값 반복은 한 번만 쌓여야 한다
+    at.session_state["input_x"] = x
+    at.run()
+try:
+    # AppTest 의 session_state 프록시에는 .get() 이 없다 (앱 안의 st.session_state 와 다르다).
+    history = at.session_state["trail__s2"]
+except (KeyError, AttributeError):
+    history = []
+check("자취가 쌓인다", len(history) > 0, len(history))
+check("같은 점 반복은 한 번만", len(history) <= 4, len(history))
+check("섹션 2 자취 켜고도 예외 없음", not at.exception, describe(at))
+
 print("\n" + "=" * 52)
 if failures:
     print(f"{len(failures)} FAILED:")
