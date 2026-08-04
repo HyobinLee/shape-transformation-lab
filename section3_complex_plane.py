@@ -2,6 +2,7 @@ import streamlit as st
 import numpy as np
 import plotly.graph_objects as go
 
+import lab_ui
 from expression_parser import ExpressionError, compile_complex_function, compile_locus
 from lab_ui import chart, equal_axes
 
@@ -48,6 +49,17 @@ def run_complex_plane():
         st.markdown('<span style="color: purple;">⚠️ 허수 i는 1j로 표기하세요.(파이썬 표기법)</span>', unsafe_allow_html=True)
         st.caption("`i` 로 써도 됩니다. conj(z)(켤레복소수), abs(z), re(z), im(z), arg(z) 도 쓸 수 있습니다.")
         fz_input = st.text_input("w =", value="(z - 1j)**2", key="function_input")
+
+        # ✅ 관찰 보조 (렌즈)
+        #
+        # 그래프 바로 아래가 아니라 여기 두는 이유: 식이 틀리면 그래프 자리가
+        # 통째로 사라지므로, 토글까지 같이 사라지면 화면 높이가 튄다.
+        st.divider()
+        rainbow_on = st.toggle(
+            "🌈 무지개 대응 보기", value=True, key="s3_rainbow",
+            help="변환 전 도형을 편각 순서로 칠하고, 변환 후에도 같은 색을 물려줍니다. "
+                 "어느 점이 어디로 갔는지 색으로 따라갈 수 있습니다.",
+        )
 
     # ✅ 수식 컴파일 (eval 을 쓰지 않는 안전한 파서)
     #    범위를 넓혀 가며 여러 번 평가하므로, 컴파일은 반복 밖에서 한 번만 한다.
@@ -111,15 +123,37 @@ def run_complex_plane():
         # ✅ 시각화
         with col2:
             if W is not None and getattr(W, 'size', 0) > 0:
+                # ✅ 무지개 대응
+                #
+                # 이 자취는 격자 마스크에서 나온 **순서 없는 점구름**이라
+                # 호의 길이가 정의되지 않는다. 그래서 중심에 대한 편각으로
+                # 매개변수를 잡는다. 편각은 한 바퀴 돌면 제자리이므로 색상표도
+                # 순환하는 것을 쓴다(closed=True).
+                #
+                # 변환 후에 색을 **다시 계산하지 않는 것**이 핵심이다. 같은
+                # 배열을 그대로 물려줘야 "어느 점이 어디로 갔는지"가 보인다.
+                t = None
+                if rainbow_on:
+                    t = lab_ui.angle_parameter(
+                        np.column_stack([Z_selected.real, Z_selected.imag]))
+                style = lab_ui.channel_style(rainbow=t is not None)
+
+                def marker(role):
+                    if t is None:
+                        return dict(size=4, color=style[role]['color'],
+                                    symbol=style[role]['symbol'])
+                    return lab_ui.rainbow_marker(t, closed=True, size=4,
+                                                 symbol=style[role]['symbol'])
+
                 fig = go.Figure()
                 fig.add_trace(go.Scatter(
                     x=Z_selected.real, y=Z_selected.imag,
-                    mode='markers', marker=dict(size=4, color='blue'),
+                    mode='markers', marker=marker('before'),
                     name='변환 전 도형 z'
                 ))
                 fig.add_trace(go.Scatter(
                     x=W.real, y=W.imag,
-                    mode='markers', marker=dict(size=4, color='red'),
+                    mode='markers', marker=marker('after'),
                     name='변환 후 도형 w'
                 ))
 
@@ -145,6 +179,12 @@ def run_complex_plane():
                     f"자동으로 잡은 정의역: 실수부·허수부 모두 "
                     f"[−{final_range}, {final_range}] 안에서 찾았습니다."
                 )
+                if t is not None:
+                    st.caption(
+                        "🌈 색 = 변환 전 도형에서의 편각. 같은 색끼리가 서로 대응합니다. "
+                        "○ 변환 전 / △ 변환 후. "
+                        "**변환 후 도형에 무지개가 몇 번 나타나는지 세어 보세요.**"
+                    )
             else:
                 st.warning("복소함수 적용 결과가 없습니다.")
 
