@@ -1,8 +1,4 @@
 import streamlit as st
-from section1_transformation_by_matrix import run_transformation_by_matrix
-from section2_symmetry_rotation import run_symmetry_rotation
-from section3_complex_plane import run_complex_plane
-from section4_rotation_translation import run_rotation_translation
 
 # ✅ 페이지 설정
 st.set_page_config(
@@ -23,11 +19,18 @@ menu = st.sidebar.radio("📂 실험을 선택하세요", [
 ])
 
 # ✅ 선택에 따라 해당 시뮬레이터 실행
+#
+# import 를 분기 안에 두어 고른 섹션만 불러온다. 위에서 넷을 다 import 하면
+# 쓰지도 않을 sympy 까지 매번 로드해 첫 화면이 늦게 뜬다.
 if menu == "1. 행렬을 통한 일차변환":
+    from section1_transformation_by_matrix import run_transformation_by_matrix
     run_transformation_by_matrix()
 elif menu == "2. 행렬을 통한 대칭/회전변환":
+    from section2_symmetry_rotation import run_symmetry_rotation
     run_symmetry_rotation()
 elif menu == "3. 복소평면에서의 이동":
+    from section3_complex_plane import run_complex_plane
     run_complex_plane()
 elif menu == "4. 복소평면에서의 회전/평행이동":
+    from section4_rotation_translation import run_rotation_translation
     run_rotation_translation()

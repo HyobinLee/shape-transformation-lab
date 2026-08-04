@@ -1,6 +1,4 @@
-streamlit
-numpy 
-matplotlib
+streamlit>=1.60
+numpy
 plotly
 sympy
-streamlit-plotly-events

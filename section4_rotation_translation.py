@@ -2,6 +2,11 @@ import streamlit as st
 import numpy as np
 import plotly.graph_objs as go
 
+from lab_ui import chart, equal_axes
+
+#: 복소평면에서 보여 줄 범위.
+VIEW = 8.0
+
 
 def run_rotation_translation():
     st.header("🟥 (4) 회전과 평행이동 시뮬레이터")
@@ -75,35 +80,16 @@ def run_rotation_translation():
         fig.add_trace(go.Scatter(x=[beta.real], y=[beta.imag], mode='markers',
                                 marker=dict(size=10, color='orange', symbol='x'), name='두번째 평행이동 β'))
 
-        # ✅ 완전 고정 레이아웃
-                # ✅ 완전 고정 레이아웃
+        # ✅ 고정 레이아웃. 다른 섹션과 같은 크기로 맞춘다 —
+        #    섹션을 옮길 때마다 페이지 높이가 튀면 그 자체가 깜빡임으로 보인다.
+        equal_axes(fig, view_key="s4", x_range=[-VIEW, VIEW], y_range=[-VIEW, VIEW])
         fig.update_layout(
-            width=900,
-            height=900,
-            xaxis=dict(
-                title="Re",
-                range=[-8, 8],
-                showgrid=True,
-                zeroline=True,
-                fixedrange=True
-            ),
-            yaxis=dict(
-                title="Im",
-                range=[-8, 8],
-                showgrid=True,
-                zeroline=True,
-                fixedrange=True,
-                scaleanchor="x",
-                scaleratio=1,
-                constrain='domain'  # ✅ 이 줄이 핵심입니다!
-            ),
+            xaxis_title="Re",
+            yaxis_title="Im",
+            yaxis_constrain='domain',
             margin=dict(l=40, r=40, t=40, b=40),
             showlegend=True,
             title="복소평면에서의 회전+평행이동 변환 시각화"
         )
 
-
-        # ✅ 오른쪽 칼럼 내에서 그래프를 정중앙에 정렬
-        gcol1, gcol2, gcol3 = st.columns([0.5, 5, 0.5])
-        with gcol2:
-            st.plotly_chart(fig, use_container_width=False)
+        chart(fig, key="s4_chart")
