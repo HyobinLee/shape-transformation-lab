@@ -100,17 +100,33 @@ section1_transformation_by_matrix.py  # 1. 행렬을 통한 일차변환
 section2_symmetry_rotation.py         # 2. 행렬을 통한 대칭/회전변환
 section3_complex_plane.py             # 3. 복소평면에서의 이동
 section4_rotation_translation.py      # 4. 복소평면에서의 회전/평행이동
+expression_parser.py                  # 섹션3의 수식 입력을 안전하게 파싱 (AST 검문 + sympy)
+fonts/                                # 나눔고딕 (matplotlib 한글용)
+test/                                 # 실행 스크립트 형태의 검증 (pytest 아님)
+backup/                               # 미사용 이전 버전 보관
+docs/intent.md                        # 프로젝트 구성과 개발 철학
 requirements.txt
 ```
 
 - [app.py](app.py) 는 라우팅만 담당하고, 실제 화면은 각 `section*.py` 의 `run_*()` 함수에 있습니다. **기능 수정은 대부분 해당 섹션 파일만 고치면 됩니다.**
-- `app_backup.py`, `dash_symmetry_tool.py` 는 현재 `app.py` 에서 import되지 않는 이전 버전 / 별도 실험 파일입니다.
+- [expression_parser.py](expression_parser.py) 는 섹션3이 학생의 수식 입력(`x**2 + y**2 == 1`, `(z - 1j)**2`)을 `eval` 없이 계산하기 위해 쓰는 모듈입니다. 자세한 배경은 [docs/intent.md](docs/intent.md) 참고.
+- `backup/app_backup.py` (섹션 분리 이전의 단일 파일 버전), `dash_symmetry_tool.py` (섹션2를 Dash로 시도한 실험) 는 `app.py` 에서 import되지 않습니다.
+
+### 검증 실행
+
+파서를 고쳤다면 아래를 실행해 보세요. pytest는 쓰지 않고 그냥 스크립트로 돌아갑니다.
+
+```bash
+python test/test_expression_parser.py
+```
+
+정상 입력·보안 차단·오류 안내를 모두 확인하고, 마지막 줄에 `ALL PASS` 가 찍히면 성공입니다 (종료 코드 0).
 
 ---
 
 ## 알려진 주의사항
 
-- `requirements.txt` 의 `fonts` 는 PyPI의 무관한 더미 패키지입니다. 한글 폰트 목적이었다면 효과가 없으며, matplotlib 한글 깨짐은 코드에서 폰트를 지정해야 합니다:
+- 한글 폰트는 저장소의 `fonts/` 에 들어 있는 `NanumGothic.ttf` 를 섹션1·3이 직접 읽어 씁니다. `requirements.txt` 의 `fonts` 는 이와 무관한 PyPI 더미 패키지이므로 지워도 됩니다. 폰트를 코드에서 지정하려면:
 
   ```python
   matplotlib.rcParams['font.family'] = 'Malgun Gothic'  # macOS: 'AppleGothic'
