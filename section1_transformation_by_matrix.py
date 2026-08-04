@@ -266,7 +266,7 @@ def run_transformation_by_matrix():
         # ✅ 관찰 보조 (렌즈)
         st.divider()
         basis_on = st.toggle(
-            "📦 기저 상자 보기", value=True, key="s1_basis",
+            "📦 기저 상자 보기", value=False, key="s1_basis",
             help="e₁, e₂ 가 만드는 단위정사각형과 그 상을 함께 그립니다. "
                  "a11 을 밀면 어느 화살표가 따라 움직이는지 보세요.",
         )
