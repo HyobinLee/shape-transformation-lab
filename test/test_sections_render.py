@@ -28,6 +28,7 @@ MENUS = [
     "3. 복소평면에서의 이동",
     "4. 복소평면에서의 회전/평행이동",
     "5. 일차변환의 고유공간",
+    "6. 거울을 몇 번 놓아야 하는가",
     "7. 되풀이하면 어디로 가는가",
 ]
 
@@ -202,7 +203,7 @@ from section7_orbit import PRESETS as ORBIT_PRESETS  # noqa: E402
 for name, values in ORBIT_PRESETS.items():
     at = AppTest.from_file(APP, default_timeout=90)
     at.run()
-    at.sidebar.radio[0].set_value(MENUS[5])
+    at.sidebar.radio[0].set_value(MENUS[6])
     at.run()
     at.session_state["s7_reveal"] = True
     for key, value in values.items():
@@ -210,11 +211,11 @@ for name, values in ORBIT_PRESETS.items():
     at.run()
     check(f"섹션 7 — {name}", not at.exception, describe(at))
 
-at = load(MENUS[5], s7_r=2.5, s7_n=200)      # 확실히 발산시킨다
+at = load(MENUS[6], s7_r=2.5, s7_n=200)      # 확실히 발산시킨다
 check("섹션 7 발산해도 죽지 않는다", not at.exception, describe(at))
 check("발산을 학생에게 알린다", len(at.warning) > 0)
 
-at = load(MENUS[5], s7_julia=True)
+at = load(MENUS[6], s7_julia=True)
 check("줄리아 집합을 켜도 죽지 않는다", not at.exception, describe(at))
 
 print("\n=== 13. 섹션 4 — 고정점 추측·확인 경로 ===")
@@ -226,6 +227,29 @@ check("theta=0 → 중심이 없다고 안내", not at.exception and len(at.info
 
 at = load(MENUS[3], **{"trail_on__s4": True, "s4_steps": True})
 check("중간 단계 + 자취 동시", not at.exception, describe(at))
+
+print("\n=== 14. 섹션 6 — 거울 1~3개와 프리셋 ===")
+for count in (1, 2, 3):
+    at = load(MENUS[5], s6_count=count, s6_reveal=True)
+    check(f"거울 {count}개 + 정체 밝히기", not at.exception, describe(at))
+
+for preset in ("두 축 평행", "두 축 교차", "미끄럼대칭"):
+    at = load(MENUS[5], s6_preset=preset, s6_reveal=True, s6_count=3)
+    check(f"섹션 6 프리셋 — {preset}", not at.exception, describe(at))
+
+# 축이 겹치면 항등변환이 된다 — 회전과 평행이동의 경계.
+at = load(MENUS[5], s6_count=2, s6_reveal=True,
+          s6_a1=30.0, s6_d1=1.0, s6_a2=30.0, s6_d2=1.0)
+check("같은 거울 두 번(항등)도 죽지 않는다", not at.exception, describe(at))
+
+print("\n=== 15. 섹션 2 — 호·도형·계기판 ===")
+at = load(MENUS[1], s2_shape=True, s2_arc=True, s2_reveal=True)
+check("도형+호+숫자 동시", not at.exception, describe(at))
+check("불변량 계기판 3칸", len(at.get("metric")) == 3, len(at.get("metric")))
+check("섹션 6 으로 가는 안내가 있다", len(at.info) > 0)
+
+at = load(MENUS[1], s2_shape=True, axis1="y축", axis2="x축")
+check("축 종류를 바꿔도 호가 그려진다", not at.exception, describe(at))
 
 print("\n" + "=" * 52)
 if failures:

@@ -17,6 +17,7 @@ menu = st.sidebar.radio("📂 실험을 선택하세요", [
     "3. 복소평면에서의 이동",
     "4. 복소평면에서의 회전/평행이동",
     "5. 일차변환의 고유공간",
+    "6. 거울을 몇 번 놓아야 하는가",
     "7. 되풀이하면 어디로 가는가",
 ])
 
@@ -39,6 +40,9 @@ elif menu == "4. 복소평면에서의 회전/평행이동":
 elif menu == "5. 일차변환의 고유공간":
     from section5_eigenspace import run_eigenspace
     run_eigenspace()
+elif menu == "6. 거울을 몇 번 놓아야 하는가":
+    from section6_isometry import run_isometry
+    run_isometry()
 elif menu == "7. 되풀이하면 어디로 가는가":
     from section7_orbit import run_orbit
     run_orbit()

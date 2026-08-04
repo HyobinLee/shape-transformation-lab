@@ -8,6 +8,29 @@ from lab_ui import chart, equal_axes
 #: 좌표평면에서 보여 줄 범위. 학생 입력도 이 범위로 제한한다.
 VIEW = 5.0
 
+#: 방향이 보이는 비대칭 도형(작은 깃발). 점 하나로는 대칭이 **방향을 뒤집는다**는
+#: 사실을 관찰할 수 없다 — 1차 대칭에서 뒤집혔다가 2차에서 되돌아오는 것이
+#: 보여야 "짝수 번 = 회전" 이 납득된다.
+FLAG = np.array([
+    [0.0, 0.0], [0.0, 1.6], [0.9, 1.6], [0.9, 1.25], [0.33, 1.25],
+    [0.33, 0.9], [0.75, 0.9], [0.75, 0.55], [0.33, 0.55], [0.33, 0.0], [0.0, 0.0],
+])
+
+
+def arc(radius, start_deg, end_deg, points=60):
+    """두 각 사이의 호. 각의 크기를 **눈으로** 견주려면 숫자가 아니라 호가 필요하다."""
+    angles = np.radians(np.linspace(start_deg, end_deg, points))
+    return radius * np.cos(angles), radius * np.sin(angles)
+
+
+def axis_angle(axis_type, angle_deg):
+    """대칭축이 x축과 이루는 각(도)."""
+    if axis_type == 'x축':
+        return 0.0
+    if axis_type == 'y축':
+        return 90.0
+    return float(angle_deg)
+
 
 # ✅ 대칭 행렬 생성 함수 (축의 종류와 각도 입력 → 행렬)
 def reflection_matrix(axis_type, angle_deg=None):
@@ -74,6 +97,17 @@ def run_symmetry_rotation():
 
         st.markdown("🔵 입력점 | 🟢 1차 대칭 | 🔴 최종 대칭 결과")
         st.markdown("🟣 축1 (보라색 선), 🟠 축2 (주황색 선)")
+
+        st.divider()
+        use_shape = st.toggle(
+            "🚩 점 대신 도형으로 보기", value=False, key="s2_shape",
+            help="점 하나로는 대칭이 방향을 뒤집는다는 것을 볼 수 없습니다. "
+                 "비대칭 도형이면 1차에서 뒤집혔다가 2차에서 되돌아옵니다.",
+        )
+        show_arc = st.toggle(
+            "📐 각을 호로 보기", value=True, key="s2_arc",
+            help="두 축의 사잇각과 ∠P₀OP₂ 를 호로 나란히 그립니다. 크기를 견줘 보세요.",
+        )
 
         # ✅ 관찰 보조 (렌즈)
         #
@@ -154,13 +188,44 @@ def run_symmetry_rotation():
                
 
 
-        # 점 시각화
-        fig.add_trace(go.Scatter(x=[P0[0]], y=[P0[1]], mode='markers',
-                                 marker=dict(color='blue', size=10), name='입력점'))
-        fig.add_trace(go.Scatter(x=[P1[0]], y=[P1[1]], mode='markers',
-                                 marker=dict(color='green', size=10), name='1차 대칭'))
-        fig.add_trace(go.Scatter(x=[P2[0]], y=[P2[1]], mode='markers',
-                                 marker=dict(color='red', size=10), name='최종 결과'))
+        # ✅ 각을 호로 — 이 섹션의 유일한 명제인 "2배" 를 눈으로 확인할 수단.
+        #    숫자로 적어 주면 답을 말해 버리는 것이지만, 호는 견주게만 한다.
+        phi1, phi2 = axis_angle(axis1, angle1), axis_angle(axis2, angle2)
+        if show_arc:
+            x_arc, y_arc = arc(1.5, phi1, phi2)
+            fig.add_trace(go.Scatter(x=x_arc, y=y_arc, mode='lines',
+                                     line=dict(color='darkviolet', width=4),
+                                     name='두 축의 사잇각'))
+            start = np.degrees(np.arctan2(P0[1], P0[0]))
+            end = start + 2 * (phi2 - phi1)
+            x_arc, y_arc = arc(2.6, start, end)
+            fig.add_trace(go.Scatter(x=x_arc, y=y_arc, mode='lines',
+                                     line=dict(color='crimson', width=4),
+                                     name='∠P₀OP₂ (돌아간 각)'))
+
+        # 점(또는 도형) 시각화
+        if use_shape:
+            base = FLAG - np.array([0.45, 0.8]) + P0
+            stages = [base, base @ R1.T, (base @ R1.T) @ R2.T]
+            for points, color, name, symbol in (
+                (stages[0], lab_ui.BEFORE, '입력 도형', 'circle'),
+                (stages[1], lab_ui.MIDDLE, '1차 대칭', 'diamond'),
+                (stages[2], lab_ui.AFTER, '최종 결과', 'triangle-up'),
+            ):
+                fig.add_trace(go.Scatter(
+                    x=points[:, 0], y=points[:, 1], mode='lines+markers',
+                    line=dict(color=color, width=2),
+                    marker=dict(color=color, size=4, symbol=symbol), name=name))
+        else:
+            fig.add_trace(go.Scatter(x=[P0[0]], y=[P0[1]], mode='markers',
+                                     marker=dict(color=lab_ui.BEFORE, size=10,
+                                                 symbol='circle'), name='입력점'))
+            fig.add_trace(go.Scatter(x=[P1[0]], y=[P1[1]], mode='markers',
+                                     marker=dict(color=lab_ui.MIDDLE, size=10,
+                                                 symbol='diamond'), name='1차 대칭'))
+            fig.add_trace(go.Scatter(x=[P2[0]], y=[P2[1]], mode='markers',
+                                     marker=dict(color=lab_ui.AFTER, size=10,
+                                                 symbol='triangle-up'), name='최종 결과'))
 
         draw_axis(fig, axis1, angle1, "🟣 축1", "purple")
             
@@ -198,3 +263,18 @@ def run_symmetry_rotation():
                 st.session_state["input_x"] = new_x
                 st.session_state["input_y"] = new_y
                 st.rerun()
+
+        # ✅ 불변량 계기판 — 세 값이 늘 같다는 것 자체가 등거리성의 관찰이다.
+        gauge = st.columns(3)
+        gauge[0].metric("|OP₀|", f"{np.hypot(*P0):.3f}")
+        gauge[1].metric("|OP₁|", f"{np.hypot(*P1):.3f}")
+        gauge[2].metric("|OP₂|", f"{np.hypot(*P2):.3f}")
+        st.caption("점을 아무 데로나 옮겨도 세 값이 함께 움직입니다. 무엇이 보존되고 있나요?")
+
+        if st.toggle("🔎 각을 숫자로 보기", value=False, key="s2_reveal"):
+            turned = 2 * (phi2 - phi1)
+            st.latex(rf"\varphi_2-\varphi_1={phi2 - phi1:.2f}^\circ,\qquad "
+                     rf"\angle P_0OP_2={turned:.2f}^\circ")
+
+        st.info("이 섹션의 대칭축은 **모두 원점을 지납니다.** "
+                "축을 원점 밖으로 옮기면 무슨 일이 벌어질까요? → **섹션 6** 에서 놓아 보세요.")
