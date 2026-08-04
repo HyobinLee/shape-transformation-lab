@@ -33,22 +33,41 @@ def run_complex_plane():
 
     col1, col2 = st.columns([1, 1])
 
+    # 자유입력을 없애는 것이 아니라, **빈 칸 앞에서 얼어붙는 학생에게
+    # 출발점을 주는 것**이다. 표현력은 이 섹션의 핵심이므로 그대로 둔다.
+    examples = {
+        "원 → 제곱": ("x**2 + y**2 == 1", "(z - 1j)**2"),
+        "원 → 반전": ("x**2 + y**2 == 1", "1/z"),
+        "직선 → ?": ("y == x + 1", "z**2"),
+        "포물선": ("y == x**2", "z + 1j"),
+        "부등식(영역)": ("y > x**2", "z**2"),
+        "쌍곡선": ("x**2 - y**2 == 1", "1/z"),
+    }
+
     with col1:
-        #st.title("🔁 복소평면에서의 변환 실험")
-        #st.markdown("복소수 $z = x + iy$ 로 정의된 도형을 복소함수 $w = f(z)$ 를 통해 변환해 보세요.")
+        chosen = st.pills("예시로 시작하기", list(examples), key="s3_preset")
+        if chosen and st.session_state.get("s3_applied") != chosen:
+            locus, function = examples[chosen]
+            st.session_state["definition_input"] = locus
+            st.session_state["function_input"] = function
+            st.session_state["s3_applied"] = chosen
+            st.rerun()
 
         # ✅ 도형 정의식 입력
         st.subheader("# z의 자취 : x, y의 관계식 ___________________")
         st.markdown('<span style="color: purple;">⚠️ 곱은 *로, 제곱은 **로, 등호는 ==로 표기하세요.(파이썬 표기법)</span>', unsafe_allow_html=True)
         st.caption("부등식(`y > x**2`)과 조건 결합(`&`, `|`)도 쓸 수 있고, "
                    "sin·cos·exp·log·sqrt·abs 함수를 쓸 수 있습니다.")
-        definition = st.text_input("예: 2*y == x**2 + 1", value="x**2 + y**2 == 1", key="definition_input")
+        # 프리셋이 같은 키를 갱신하므로 기본값은 위젯이 만들어지기 전에 심는다.
+        st.session_state.setdefault("definition_input", "x**2 + y**2 == 1")
+        definition = st.text_input("예: 2*y == x**2 + 1", key="definition_input")
 
         # ✅ 복소함수 입력
         st.subheader("# 복소함수식 입력 : w = f(z) ___________________")
         st.markdown('<span style="color: purple;">⚠️ 허수 i는 1j로 표기하세요.(파이썬 표기법)</span>', unsafe_allow_html=True)
         st.caption("`i` 로 써도 됩니다. conj(z)(켤레복소수), abs(z), re(z), im(z), arg(z) 도 쓸 수 있습니다.")
-        fz_input = st.text_input("w =", value="(z - 1j)**2", key="function_input")
+        st.session_state.setdefault("function_input", "(z - 1j)**2")
+        fz_input = st.text_input("w =", key="function_input")
 
         # ✅ 관찰 보조 (렌즈)
         #
@@ -80,7 +99,7 @@ def run_complex_plane():
     # 800×800 을 돌리면 매 재실행마다 학생을 기다리게 만든다. 못 잡았을 때만
     # 범위를 넓히고 마지막 두 번은 격자도 촘촘히 한다.
     Z_selected = None
-    final_range = None
+    final_range = final_eps = None
     max_attempts = 10
     if locus_mask is not None:
         for attempt in range(max_attempts):
@@ -103,6 +122,7 @@ def run_complex_plane():
             if mask.sum() > 0:
                 Z_selected = Z[mask]
                 final_range = range_size
+                final_eps = eps
                 break
 
     if locus_mask is None or apply_fz is None:
@@ -177,7 +197,10 @@ def run_complex_plane():
                 chart(fig, key="s3_chart")
                 st.caption(
                     f"자동으로 잡은 정의역: 실수부·허수부 모두 "
-                    f"[−{final_range}, {final_range}] 안에서 찾았습니다."
+                    f"[−{final_range}, {final_range}] 안에서 찾았습니다. "
+                    f"등호 `==` 는 부동소수점으로 정확히 맞을 수 없어 "
+                    f"허용오차 **{final_eps:.4f}** 안이면 만족한 것으로 봅니다 — "
+                    f"선이 두껍게 보이는 이유입니다."
                 )
                 if t is not None:
                     st.caption(

@@ -19,6 +19,7 @@ menu = st.sidebar.radio("📂 실험을 선택하세요", [
     "5. 일차변환의 고유공간",
     "6. 거울을 몇 번 놓아야 하는가",
     "7. 되풀이하면 어디로 가는가",
+    "8. 원은 원으로 간다 (뫼비우스)",
 ])
 
 # ✅ 선택에 따라 해당 시뮬레이터 실행
@@ -46,3 +47,6 @@ elif menu == "6. 거울을 몇 번 놓아야 하는가":
 elif menu == "7. 되풀이하면 어디로 가는가":
     from section7_orbit import run_orbit
     run_orbit()
+elif menu == "8. 원은 원으로 간다 (뫼비우스)":
+    from section8_mobius import run_mobius
+    run_mobius()

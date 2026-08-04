@@ -30,6 +30,7 @@ MENUS = [
     "5. 일차변환의 고유공간",
     "6. 거울을 몇 번 놓아야 하는가",
     "7. 되풀이하면 어디로 가는가",
+    "8. 원은 원으로 간다 (뫼비우스)",
 ]
 
 failures = []
@@ -250,6 +251,30 @@ check("섹션 6 으로 가는 안내가 있다", len(at.info) > 0)
 
 at = load(MENUS[1], s2_shape=True, axis1="y축", axis2="x축")
 check("축 종류를 바꿔도 호가 그려진다", not at.exception, describe(at))
+
+print("\n=== 16. 섹션 8 — 프리셋과 극 방어 ===")
+from section8_mobius import PRESETS as MOBIUS_PRESETS  # noqa: E402
+
+for name, values in MOBIUS_PRESETS.items():
+    at = AppTest.from_file(APP, default_timeout=90)
+    at.run()
+    at.sidebar.radio[0].set_value(MENUS[7])
+    at.run()
+    at.session_state["s8_reveal"] = True
+    for key, value in values.items():
+        at.session_state[f"s8_{key}"] = float(value)
+    at.run()
+    check(f"섹션 8 — {name}", not at.exception, describe(at))
+
+at = load(MENUS[7], s8_family="직교 격자", s8_count=12, s8_reveal=True)
+check("격자 족 + 촘촘하게", not at.exception, describe(at))
+
+# 계수가 전부 0이면 어디서나 0/0 이다. 그래도 죽지 않아야 한다.
+at = load(MENUS[7], **{f"s8_{n}_{p}": 0.0 for n in "abcd" for p in ("re", "im")})
+check("계수가 전부 0이어도 죽지 않는다", not at.exception, describe(at))
+
+at = load(MENUS[7], s8_preset="ad−bc=0 (한 점으로)")
+check("ad−bc=0 을 학생에게 알린다", len(at.warning) > 0)
 
 print("\n" + "=" * 52)
 if failures:
