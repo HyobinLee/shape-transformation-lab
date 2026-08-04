@@ -43,12 +43,24 @@ def check(label, condition, detail=""):
         failures.append(label)
 
 
+def open_section(menu, timeout=90):
+    """앱을 띄우고 해당 섹션으로 이동한다.
+
+    사이드바가 묶음(기초/심화) → 섹션 두 단계라 라디오도 두 개다.
+    """
+    at = AppTest.from_file(APP, default_timeout=timeout)
+    at.run()
+    group = "기초" if menu in MENUS[:4] else "심화"
+    at.sidebar.radio[0].set_value(group)
+    at.run()
+    at.sidebar.radio[1].set_value(menu)
+    at.run()
+    return at
+
+
 def load(menu, **widgets):
     """앱을 해당 섹션으로 띄우고, 주어진 위젯 값을 넣은 뒤 다시 실행한다."""
-    at = AppTest.from_file(APP, default_timeout=60)
-    at.run()
-    at.sidebar.radio[0].set_value(menu)
-    at.run()
+    at = open_section(menu)
     for key, value in widgets.items():
         at.session_state[key] = value
     if widgets:
@@ -68,20 +80,14 @@ for menu in MENUS:
 print("\n=== 2. 섹션 1 — 학생이 넣을 법한 잘못된 좌표 ===")
 # 위젯 라벨이 아니라 순서로 접근한다. 삼각형이 기본이라 좌표 칸이 셋이다.
 for bad in ["1;1", "", "1,1,1", "abc", "1,"]:
-    at = AppTest.from_file(APP, default_timeout=60)
-    at.run()
-    at.sidebar.radio[0].set_value(MENUS[0])
-    at.run()
+    at = open_section(MENUS[0])
     at.text_input[0].set_value(bad)
     at.run()
     ok = not at.exception and len(at.warning) > 0
     check(f"좌표 '{bad}' → 경고로 안내하고 계속", ok, describe(at) or "경고가 없다")
 
 print("\n=== 3. 섹션 1 — 직선 a=b=0 (0으로 나누던 자리) ===")
-at = AppTest.from_file(APP, default_timeout=60)
-at.run()
-at.sidebar.radio[0].set_value(MENUS[0])
-at.run()
+at = open_section(MENUS[0])
 at.selectbox[0].set_value("직선")
 at.run()
 at.number_input[0].set_value(0.0)   # 계수 a
@@ -121,10 +127,7 @@ for menu in MENUS:
 print("\n=== 8. 관찰 보조 장치를 켜도 죽지 않는가 ===")
 # 무지개는 도형 종류마다 다른 경로를 탄다 — 닫힌 곡선/열린 곡선/점구름.
 for shape in ["삼각형", "사각형", "원", "직선"]:
-    at = AppTest.from_file(APP, default_timeout=60)
-    at.run()
-    at.sidebar.radio[0].set_value(MENUS[0])
-    at.run()
+    at = open_section(MENUS[0])
     at.selectbox[0].set_value(shape)
     at.run()
     at.session_state["s1_rainbow"] = True
@@ -148,10 +151,7 @@ at.run()
 check("섹션 3 무지개 끄기", not at.exception, describe(at))
 
 print("\n=== 9. 자취가 쌓이고 상한을 지키는가 ===")
-at = AppTest.from_file(APP, default_timeout=60)
-at.run()
-at.sidebar.radio[0].set_value(MENUS[1])
-at.run()
+at = open_section(MENUS[1])
 at.session_state["trail_on__s2"] = True
 at.run()
 for x in [1.0, 2.0, 3.0, 3.0, 3.0]:      # 같은 값 반복은 한 번만 쌓여야 한다
@@ -172,10 +172,7 @@ import json  # noqa: E402
 from section5_eigenspace import PRESETS  # noqa: E402
 
 for name, A in PRESETS.items():
-    at = AppTest.from_file(APP, default_timeout=90)
-    at.run()
-    at.sidebar.radio[0].set_value(MENUS[4])
-    at.run()
+    at = open_section(MENUS[4])
     at.session_state["s5_reveal"] = True
     for key, value in zip(("m11", "m12", "m21", "m22"), A.ravel()):
         at.session_state[key] = float(value)
@@ -202,10 +199,7 @@ print("\n=== 12. 섹션 7 — 다섯 프리셋과 발산 방어 ===")
 from section7_orbit import PRESETS as ORBIT_PRESETS  # noqa: E402
 
 for name, values in ORBIT_PRESETS.items():
-    at = AppTest.from_file(APP, default_timeout=90)
-    at.run()
-    at.sidebar.radio[0].set_value(MENUS[6])
-    at.run()
+    at = open_section(MENUS[6])
     at.session_state["s7_reveal"] = True
     for key, value in values.items():
         at.session_state[f"s7_{key}"] = float(value)
@@ -256,10 +250,7 @@ print("\n=== 16. 섹션 8 — 프리셋과 극 방어 ===")
 from section8_mobius import PRESETS as MOBIUS_PRESETS  # noqa: E402
 
 for name, values in MOBIUS_PRESETS.items():
-    at = AppTest.from_file(APP, default_timeout=90)
-    at.run()
-    at.sidebar.radio[0].set_value(MENUS[7])
-    at.run()
+    at = open_section(MENUS[7])
     at.session_state["s8_reveal"] = True
     for key, value in values.items():
         at.session_state[f"s8_{key}"] = float(value)

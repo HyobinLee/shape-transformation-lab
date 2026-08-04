@@ -3,6 +3,16 @@
 행렬과 복소평면을 이용하는 도형의 변환을 관찰하고 실험함.
 Fork: 2026-08-03 by Hyobinlee
 
+여덟 개의 실험실이 있습니다. **기초(1~4)** 는 교과서의 문장을 눈으로 확인하게 하고,
+**심화(5~8)** 는 각각 기초 하나를 이어받아 그 뒤에 숨은 구조를 학생이 직접 찾게 합니다.
+
+| | 기초 | 심화 |
+| --- | --- | --- |
+| 행렬 | 1. 일차변환 | **5. 고유공간** — 변환이 제자리에 두는 직선은 몇 개인가 |
+| 대칭 | 2. 대칭/회전변환 | **6. 등거리변환** — 거울을 몇 개 놓아도 결과는 넷뿐이다 |
+| 복소평면 | 3. 복소함수 사상 | **8. 뫼비우스** — 원은 원으로 간다. 직선도 원일까 |
+| 합성 | 4. 회전+평행이동 | **7. 반복과 궤도** — 되풀이하면 어디로 가는가 |
+
 Streamlit 기반 웹 앱입니다. **Docker는 필요하지 않습니다** (배경은 아래 [Docker에 대하여](#docker에-대하여) 참고).
 
 ---
@@ -96,44 +106,68 @@ pip freeze > requirements-lock.txt   # 선택: 정확한 버전 기록용
 
 ```text
 app.py                                # 사이드바 라우터 (진입점)
-section1_transformation_by_matrix.py  # 1. 행렬을 통한 일차변환
-section2_symmetry_rotation.py         # 2. 행렬을 통한 대칭/회전변환
-section3_complex_plane.py             # 3. 복소평면에서의 이동
-section4_rotation_translation.py      # 4. 복소평면에서의 회전/평행이동
+lab_ui.py                             # 섹션 공통 화면 배관 (수업 내용은 들어가지 않음)
 expression_parser.py                  # 섹션3의 수식 입력을 안전하게 파싱 (AST 검문 + sympy)
-fonts/                                # 나눔고딕 (matplotlib 한글용)
+
+section1_transformation_by_matrix.py  # 기초 1. 행렬을 통한 일차변환
+section2_symmetry_rotation.py         # 기초 2. 행렬을 통한 대칭/회전변환
+section3_complex_plane.py             # 기초 3. 복소평면에서의 이동
+section4_rotation_translation.py      # 기초 4. 복소평면에서의 회전/평행이동
+section5_eigenspace.py                # 심화 5. 일차변환의 고유공간          (1 을 이어받음)
+section6_isometry.py                  # 심화 6. 거울을 몇 번 놓아야 하는가   (2 를 이어받음)
+section7_orbit.py                     # 심화 7. 되풀이하면 어디로 가는가     (4 를 이어받음)
+section8_mobius.py                    # 심화 8. 원은 원으로 간다 (뫼비우스)  (3 을 이어받음)
+
 test/                                 # 실행 스크립트 형태의 검증 (pytest 아님)
 backup/                               # 미사용 이전 버전 보관
 docs/intent.md                        # 프로젝트 구성과 개발 철학
+docs/260804_0200_plans.md             # 확장 계획과 그 근거
 requirements.txt
 ```
 
 - [app.py](app.py) 는 라우팅만 담당하고, 실제 화면은 각 `section*.py` 의 `run_*()` 함수에 있습니다. **기능 수정은 대부분 해당 섹션 파일만 고치면 됩니다.**
+- [lab_ui.py](lab_ui.py) 에는 섹션마다 반복되는 **화면 배관만** 들어갑니다 — 축 설정, 그래프 `key`/`uirevision`, 자취, 무지개 대응. **수학과 학생이 읽는 문구는 전부 섹션 파일에 남습니다.** 그래야 섹션 파일 하나만 읽어도 그 수업이 통째로 이해됩니다.
 - [expression_parser.py](expression_parser.py) 는 섹션3이 학생의 수식 입력(`x**2 + y**2 == 1`, `(z - 1j)**2`)을 `eval` 없이 계산하기 위해 쓰는 모듈입니다. 자세한 배경은 [docs/intent.md](docs/intent.md) 참고.
-- `backup/app_backup.py` (섹션 분리 이전의 단일 파일 버전), `dash_symmetry_tool.py` (섹션2를 Dash로 시도한 실험) 는 `app.py` 에서 import되지 않습니다.
+- `backup/` 의 파일들(섹션 분리 이전의 단일 파일 버전, 섹션2를 Dash로 시도한 실험)은 `app.py` 에서 import되지 않습니다. **`backup/app_backup.py` 에는 교체 이전의 `eval` 이 그대로 남아 있으니 거기서 코드를 되살려 쓰지 마세요.**
+
+### 관찰 보조 장치 (모든 섹션 공통)
+
+기능이 아니라 **보는 방식**입니다. 전부 토글이고, 기본값은 꺼짐입니다.
+
+| 장치 | 하는 일 |
+| --- | --- |
+| 🌈 **무지개 대응** | 변환 전 도형을 위치에 따라 무지개로 칠하고 변환 후에도 같은 색을 물려줍니다. 어느 점이 어디로 갔는지 색으로 따라갈 수 있습니다. |
+| 🔢 **번호 붙이기** | 등간격 10곳에 번호를 붙입니다. 색을 못 봐도 대응이 읽히고, 번호 간격이 흐트러진 정도로 늘어남을 수로 읽습니다. |
+| ✏️ **자취 남기기** | 점을 옮긴 자국을 남깁니다. 점 도구가 자취 도구가 됩니다. |
+| 🔎 **정체 밝히기** | 정답(고유값, 회전 중심, 변환의 이름)을 보여 줍니다. **먼저 추측한 뒤에 켜세요.** |
+
+무지개를 켜면 색상 채널을 그쪽이 가져가므로, 변환 전/후 구분은 **마커 모양**(○ 전 / △ 후)이 맡습니다.
 
 ### 검증 실행
 
-파서를 고쳤다면 아래를 실행해 보세요. pytest는 쓰지 않고 그냥 스크립트로 돌아갑니다.
+pytest는 쓰지 않습니다. 그냥 스크립트로 돌아갑니다.
 
 ```bash
-python test/test_expression_parser.py
+python test/test_expression_parser.py   # 파서 — 정상 입력·보안 차단·오류 안내
+python test/test_lab_ui.py              # 무지개 매개변수화, 자취, 넓이비 = |det|
+python test/test_eigenspace.py          # 섹션 5 — 고유공간 분류, 어긋난 각 곡선
+python test/test_isometry.py            # 섹션 6 — 등거리변환 분류 (정리 자체를 확인)
+python test/test_orbit.py               # 섹션 4·7 — 고정점과 궤도
+python test/test_mobius.py              # 섹션 8 — 원이 정말 원으로 가는지 재 봄
+python test/test_sections_render.py     # 여덟 섹션이 이상한 입력에도 죽지 않는지
 ```
 
-정상 입력·보안 차단·오류 안내를 모두 확인하고, 마지막 줄에 `ALL PASS` 가 찍히면 성공입니다 (종료 코드 0).
+각각 마지막 줄에 `ALL PASS` 가 찍히면 성공입니다 (종료 코드 0).
+`test_sections_render.py` 는 Streamlit의 `AppTest` 로 앱을 헤드리스로 띄우므로 조금 느립니다(1~2분).
 
 ---
 
 ## 알려진 주의사항
 
-- 한글 폰트는 저장소의 `fonts/` 에 들어 있는 `NanumGothic.ttf` 를 섹션1·3이 직접 읽어 씁니다. `requirements.txt` 의 `fonts` 는 이와 무관한 PyPI 더미 패키지이므로 지워도 됩니다. 폰트를 코드에서 지정하려면:
-
-  ```python
-  matplotlib.rcParams['font.family'] = 'Malgun Gothic'  # macOS: 'AppleGothic'
-  matplotlib.rcParams['axes.unicode_minus'] = False
-  ```
-
-- Streamlit의 `use_container_width` 인자는 deprecated 되었습니다. 향후 `width='stretch'` / `width='content'` 로 교체 필요.
+- **Streamlit 1.60 이상이 필요합니다.** `st.fragment`, `st.plotly_chart(on_select=...)`, `width` 기본값이 모두 최근 버전에 들어왔습니다. `requirements.txt` 에 하한을 명시해 두었습니다.
+- 그래프의 한글은 **브라우저에 설치된 폰트**로 그려집니다(Plotly). 저장소에 폰트 파일을 넣을 필요가 없어 `fonts/` 는 추적하지 않습니다.
+- 그래프를 **클릭**하면 입력점이 그 자리로 옮겨 갑니다(섹션 2·4·5·7). 숫자 칸에도 그대로 반영됩니다.
+- 슬라이더 중 일부(섹션 1의 `t`, 섹션 5의 `θ`, 섹션 7의 `n`)는 **브라우저 안에서만** 돕니다. 서버를 오가지 않으므로 화면이 깜빡이지 않고, ▶ 버튼으로 재생할 수도 있습니다.
 
 ---
 
