@@ -15,7 +15,8 @@ menu = st.sidebar.radio("📂 실험을 선택하세요", [
     "1. 행렬을 통한 일차변환",
     "2. 행렬을 통한 대칭/회전변환",
     "3. 복소평면에서의 이동",
-    "4. 복소평면에서의 회전/평행이동"
+    "4. 복소평면에서의 회전/평행이동",
+    "5. 일차변환의 고유공간",
 ])
 
 # ✅ 선택에 따라 해당 시뮬레이터 실행
@@ -34,3 +35,6 @@ elif menu == "3. 복소평면에서의 이동":
 elif menu == "4. 복소평면에서의 회전/평행이동":
     from section4_rotation_translation import run_rotation_translation
     run_rotation_translation()
+elif menu == "5. 일차변환의 고유공간":
+    from section5_eigenspace import run_eigenspace
+    run_eigenspace()

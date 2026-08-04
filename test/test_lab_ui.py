@@ -130,6 +130,29 @@ check("처음과 끝을 포함", idx[0] == 0 and idx[-1] == 79, (idx[0], idx[-1]
 check("점보다 웨이포인트가 많아도 죽지 않는다", len(lab_ui.waypoint_indices(10, 3)) <= 3)
 check("빈 도형", len(lab_ui.waypoint_indices(10, 0)) == 0)
 
+print("\n=== 9. 넓이비가 정말 |det| 인가 (섹션 1 계기판의 주장) ===")
+from section1_transformation_by_matrix import signed_area  # noqa: E402
+
+rng = np.random.default_rng(20260804)
+triangle = np.array([[1.0, 1.0], [1.0, 2.0], [2.0, 1.0], [1.0, 1.0]])
+square = np.array([[1.0, 1.0], [1.0, 2.0], [2.0, 2.0], [2.0, 1.0], [1.0, 1.0]])
+shapes = {"삼각형": triangle, "사각형": square, "원": circle(300, 2.0)}
+
+worst = 0.0
+for _ in range(200):
+    M = rng.normal(size=(2, 2))
+    for shape in shapes.values():
+        before, after = signed_area(shape), signed_area(shape @ M.T)
+        if abs(before) < 1e-9:
+            continue
+        worst = max(worst, abs(abs(after / before) - abs(np.linalg.det(M))))
+check("도형·행렬 무엇이든 넓이비 = |det|", worst < 1e-6, worst)
+
+check("det < 0 이면 넓이의 부호가 뒤집힌다 (방향 반전)",
+      signed_area(triangle) * signed_area(triangle @ np.array([[1.0, 0.0], [0.0, -1.0]]).T) < 0)
+check("det = 0 이면 넓이가 0 (선분으로 붕괴)",
+      abs(signed_area(triangle @ np.array([[1.0, 1.0], [1.0, 1.0]]).T)) < 1e-9)
+
 print("\n" + "=" * 52)
 if failures:
     print(f"{len(failures)} FAILED:")

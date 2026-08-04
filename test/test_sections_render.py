@@ -27,6 +27,7 @@ MENUS = [
     "2. 행렬을 통한 대칭/회전변환",
     "3. 복소평면에서의 이동",
     "4. 복소평면에서의 회전/평행이동",
+    "5. 일차변환의 고유공간",
 ]
 
 failures = []
@@ -161,6 +162,38 @@ except (KeyError, AttributeError):
 check("자취가 쌓인다", len(history) > 0, len(history))
 check("같은 점 반복은 한 번만", len(history) <= 4, len(history))
 check("섹션 2 자취 켜고도 예외 없음", not at.exception, describe(at))
+
+print("\n=== 10. 섹션 5 — 네 가지 경우를 전부 그리는가 ===")
+import json  # noqa: E402
+
+from section5_eigenspace import PRESETS  # noqa: E402
+
+for name, A in PRESETS.items():
+    at = AppTest.from_file(APP, default_timeout=90)
+    at.run()
+    at.sidebar.radio[0].set_value(MENUS[4])
+    at.run()
+    at.session_state["s5_reveal"] = True
+    for key, value in zip(("m11", "m12", "m21", "m22"), A.ravel()):
+        at.session_state[key] = float(value)
+    at.run()
+    check(f"섹션 5 — {name}", not at.exception, describe(at))
+
+at = load(MENUS[4])
+spec = json.loads(at.get("plotly_chart")[0].proto.spec)
+check("훑기 그래프에 프레임이 실린다", len(spec.get("frames", [])) > 0,
+      len(spec.get("frames", [])))
+check("훑기 슬라이더가 있다", len(spec["layout"].get("sliders", [])) == 1)
+check("uirevision 이 있다", spec["layout"].get("uirevision") is not None)
+
+print("\n=== 11. 섹션 1 — 연속 변환 프레임과 계기판 ===")
+at = load(MENUS[0])
+at.session_state["s1_morph"] = True
+at.run()
+spec = json.loads(at.get("plotly_chart")[0].proto.spec)
+check("연속 변환 프레임", len(spec.get("frames", [])) == 41, len(spec.get("frames", [])))
+check("넓이 계기판 3칸", len(at.get("metric")) == 3, len(at.get("metric")))
+check("연속 변환 켜고도 예외 없음", not at.exception, describe(at))
 
 print("\n" + "=" * 52)
 if failures:
