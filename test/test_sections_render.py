@@ -72,6 +72,25 @@ def describe(at):
     return " | ".join(e.value for e in at.exception) if at.exception else ""
 
 
+FREE, DISCOVERY = "🔬 자유 탐구", "🧭 단계별 탐구"
+
+
+def open_s1(mode=FREE, **widgets):
+    """섹션 1 을 특정 모드로 연다.
+
+    §1 은 화면이 둘이다 — 예전 실험실(자유 탐구)과 답을 감춘 3단계 경로.
+    기본값은 단계 모드이므로, 예전 위젯을 건드리는 검증은 모드를 명시해야 한다.
+    """
+    at = open_section(MENUS[0])
+    at.session_state["s1_mode"] = mode
+    at.run()
+    for key, value in widgets.items():
+        at.session_state[key] = value
+    if widgets:
+        at.run()
+    return at
+
+
 print("=== 1. 모든 섹션이 기본값으로 뜨는가 ===")
 for menu in MENUS:
     at = load(menu)
@@ -87,7 +106,7 @@ for bad in ["1;1", "", "1,1,1", "abc", "1,"]:
     check(f"좌표 '{bad}' → 경고로 안내하고 계속", ok, describe(at) or "경고가 없다")
 
 print("\n=== 3. 섹션 1 — 직선 a=b=0 (0으로 나누던 자리) ===")
-at = open_section(MENUS[0])
+at = open_s1(FREE)
 at.selectbox[0].set_value("직선")
 at.run()
 at.number_input[0].set_value(0.0)   # 계수 a
@@ -127,7 +146,7 @@ for menu in MENUS:
 print("\n=== 8. 관찰 보조 장치를 켜도 죽지 않는가 ===")
 # 무지개는 도형 종류마다 다른 경로를 탄다 — 닫힌 곡선/열린 곡선/점구름.
 for shape in ["삼각형", "사각형", "원", "직선"]:
-    at = open_section(MENUS[0])
+    at = open_s1(FREE)
     at.selectbox[0].set_value(shape)
     at.run()
     at.session_state["s1_rainbow"] = True
@@ -136,7 +155,7 @@ for shape in ["삼각형", "사각형", "원", "직선"]:
     at.run()
     check(f"섹션 1 무지개+번호 — {shape}", not at.exception, describe(at))
 
-at = load(MENUS[0])
+at = open_s1(FREE)
 at.session_state["s1_rainbow"] = True
 at.run()
 # 도형이 한 점으로 붕괴해도(모든 성분 0) 0으로 나누지 않아야 한다.
@@ -187,9 +206,7 @@ check("훑기 슬라이더가 있다", len(spec["layout"].get("sliders", [])) ==
 check("uirevision 이 있다", spec["layout"].get("uirevision") is not None)
 
 print("\n=== 11. 섹션 1 — 연속 변환 프레임과 계기판 ===")
-at = load(MENUS[0])
-at.session_state["s1_morph"] = True
-at.run()
+at = open_s1(FREE, s1_morph=True)
 spec = json.loads(at.get("plotly_chart")[0].proto.spec)
 check("연속 변환 프레임", len(spec.get("frames", [])) == 41, len(spec.get("frames", [])))
 check("넓이 계기판 3칸", len(at.get("metric")) == 3, len(at.get("metric")))
@@ -266,6 +283,64 @@ check("계수가 전부 0이어도 죽지 않는다", not at.exception, describe
 
 at = load(MENUS[7], s8_preset="ad−bc=0 (한 점으로)")
 check("ad−bc=0 을 학생에게 알린다", len(at.warning) > 0)
+
+print("\n=== 17. 섹션 1 — 단계별 탐구 ===")
+import section1_transformation_by_matrix as s1  # noqa: E402
+
+at = open_s1(DISCOVERY)
+check("단계 모드가 기본으로 뜬다", not at.exception, describe(at))
+check("1단계 앞부분에는 도형 종류가 잠겨 있다", len(at.selectbox) == 0, len(at.selectbox))
+check("행렬 입력 칸이 없다(고정행렬)", not any(w.label.startswith("a1") for w in at.number_input))
+
+# 답을 감추는 규약 — 단계 모드에는 계기판도 기저 상자도 없다.
+check("계기판이 감춰져 있다", len(at.get("metric")) == 0, len(at.get("metric")))
+check("기저 상자 토글이 감춰져 있다",
+      not any("기저" in t.label for t in at.toggle), [t.label for t in at.toggle])
+
+for stage in (1, 2, 3):
+    at = open_s1(DISCOVERY)
+    at.session_state["s1"]["stage"] = stage
+    at.run()
+    check(f"{stage}단계가 그려진다", not at.exception, describe(at))
+    check(f"{stage}단계 차트에 key 가 있다",
+          len(at.get("plotly_chart")) == 1 and at.get("plotly_chart")[0].proto.id)
+
+# 3단계는 방향각을 돌려 붕괴를 찾는 자리다. 임계각에서 상이 한 점이 되어도
+# 축 범위 계산이 0으로 나뉘지 않아야 한다.
+at = open_s1(DISCOVERY)
+at.session_state["s1"]["stage"] = 3
+at.run()
+at.session_state["s1d_theta_exact"] = 180.0 + np.degrees(np.arctan(-2.0))   # A2 의 임계각
+at.run()
+check("3단계 임계각(상이 한 점)에서도 죽지 않는다", not at.exception, describe(at))
+
+# 학생이 발견을 말하면 앱이 숫자로 재고 승인한다 — 키 없이 규칙 폴백으로.
+at = open_s1(DISCOVERY)
+at.session_state["s1"]["stage"] = 2
+at.run()
+s1._handle_submission(at.session_state["s1"], 2, s1.MATRICES["A2"],
+                      "도형이 다 한 줄로 납작해져요")
+check("올바른 관찰이 승인된다", "S2_FLAT" in at.session_state["s1"]["reached"][2])
+s1._handle_submission(at.session_state["s1"], 2, s1.MATRICES["A2"],
+                      "그 직선 기울기가 0.5 인 것 같아")
+check("틀린 관찰은 승인되지 않는다", "S2_SLOPE" not in at.session_state["s1"]["reached"][2])
+check("틀렸을 때 다음 힌트를 하나 준다", at.session_state["s1"]["hint_idx"])
+at.run()
+check("대화 뒤에도 죽지 않는다", not at.exception, describe(at))
+
+# 잔상은 같은 입력이 반복돼도 쌓이지 않아야 한다.
+at = open_s1(DISCOVERY, s1d_ghosts=True)
+at.run()
+at.run()
+check("잔상이 재실행마다 중복 적재되지 않는다",
+      len(at.session_state["s1"]["ghosts"]) <= 1, len(at.session_state["s1"]["ghosts"]))
+
+for bad in ["1;1", "abc"]:
+    at = open_s1(DISCOVERY)
+    at.text_input[0].set_value(bad)
+    at.run()
+    check(f"단계 모드 좌표 '{bad}' → 경고로 안내하고 계속",
+          not at.exception and len(at.warning) > 0, describe(at))
 
 print("\n" + "=" * 52)
 if failures:

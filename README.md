@@ -108,6 +108,7 @@ pip freeze > requirements-lock.txt   # 선택: 정확한 버전 기록용
 app.py                                # 사이드바 라우터 (진입점)
 lab_ui.py                             # 섹션 공통 화면 배관 (수업 내용은 들어가지 않음)
 expression_parser.py                  # 섹션3의 수식 입력을 안전하게 파싱 (AST 검문 + sympy)
+gemini_client.py                      # 섹션1 탐구 챗봇의 네트워크 경계 (표준 urllib)
 
 section1_transformation_by_matrix.py  # 기초 1. 행렬을 통한 일차변환
 section2_symmetry_rotation.py         # 기초 2. 행렬을 통한 대칭/회전변환
@@ -154,6 +155,7 @@ python test/test_eigenspace.py          # 섹션 5 — 고유공간 분류, 어�
 python test/test_isometry.py            # 섹션 6 — 등거리변환 분류 (정리 자체를 확인)
 python test/test_orbit.py               # 섹션 4·7 — 고정점과 궤도
 python test/test_mobius.py              # 섹션 8 — 원이 정말 원으로 가는지 재 봄
+python test/test_section1_discovery.py  # 섹션 1 단계별 탐구 — 명제·힌트 누설·판정기
 python test/test_sections_render.py     # 여덟 섹션이 이상한 입력에도 죽지 않는지
 ```
 
