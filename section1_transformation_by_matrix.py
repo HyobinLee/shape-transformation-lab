@@ -796,8 +796,11 @@ CHAT_CSS = """
 /* 플로팅은 **연출**이다. 이 CSS 가 통째로 안 먹어도 챗봇은 화면 안에
    인라인으로 앉아 기능을 100% 유지한다. st-emotion-cache-* 해시를 잡는
    흔한 방식 대신 st.container(key=...) 가 붙여 주는 안정적인 클래스만 쓴다. */
+/* 오른쪽 **위**. top 을 4.5rem 아래로 잡는 이유는 Streamlit 자신의 헤더
+   툴바(메뉴·실행 표시)가 그 자리를 이미 쓰고 있기 때문이다. 헤더 위로
+   덮으려고 z-index 를 올리면 이번엔 메뉴가 눌리지 않는다. */
 .st-key-s1_chatdock {
-    position: fixed; right: 24px; bottom: 24px; z-index: 999;
+    position: fixed; right: 24px; top: 4.5rem; z-index: 999;
     width: 320px; text-align: right;
 }
 .st-key-s1_chatdock [data-testid="stPopover"] { display: inline-block; }
@@ -806,8 +809,10 @@ CHAT_CSS = """
     box-shadow: 0 4px 14px rgba(0,0,0,0.25);
     animation: s1-wiggle 6s ease-in-out infinite;
 }
+/* 아이콘이 위에 있으므로 말풍선은 **아래**로 내려온다. 위로 띄우면
+   헤더에 가리거나 화면 밖으로 나간다. */
 .s1-bubble {
-    display: inline-block; margin-bottom: 8px; padding: 8px 12px;
+    display: inline-block; margin-top: 8px; padding: 8px 12px;
     background: #fff8d6; color: #333; border-radius: 12px; font-size: 13px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.18); max-width: 260px; text-align: left;
 }
@@ -901,11 +906,13 @@ def _handle_submission(state, stage, matrix, text):
 
 
 def chat_dock(state, stage, matrix):
-    """오른쪽 아래에 떠 있는 챗봇."""
+    """오른쪽 위에 떠 있는 챗봇.
+
+    아이콘을 먼저, 말풍선을 나중에 그린다. 말풍선이 아이콘 **아래**로 나와야
+    하므로 DOM 순서가 그대로 화면 순서가 된다.
+    """
     st.markdown(CHAT_CSS, unsafe_allow_html=True)
     with st.container(key="s1_chatdock"):
-        st.markdown(f'<div class="s1-bubble">{BUBBLES[state["bubble"]]}</div>',
-                    unsafe_allow_html=True)
         with st.popover("💬"):
             st.caption("네가 쓴 문장은 답변을 만들기 위해 외부 서비스로 전송돼. "
                        "그림을 조작해서 알아낸 걸 말로 적어 줘.")
@@ -916,6 +923,8 @@ def chat_dock(state, stage, matrix):
             for role, text in state["log"][-12:]:
                 st.chat_message(role).markdown(text)
             submitted = st.chat_input("알아낸 걸 적어 줘", key="s1_chat_input")
+        st.markdown(f'<div class="s1-bubble">{BUBBLES[state["bubble"]]}</div>',
+                    unsafe_allow_html=True)
     if submitted:
         _handle_submission(state, stage, matrix, submitted)
         st.rerun()
