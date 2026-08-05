@@ -2,3 +2,4 @@ streamlit>=1.60
 numpy
 plotly
 sympy
+starlette<1.4.0
